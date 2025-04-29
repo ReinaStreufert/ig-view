@@ -8,7 +8,7 @@ namespace ig_view
 {
     public class InboxView
     {
-        public static readonly string _LinkKeys = "0123456789ABCDEFGHIKLMNOPQRTUVWXYZ"; // j and s omitted (jump and search)
+        public static readonly string LinkKeys = "0123456789ABCDEFGHIKLMNOPQRTUVWXYZ"; // j and s omitted (jump and search)
 
         public InboxView(Inbox inbox)
         {
@@ -30,11 +30,22 @@ namespace ig_view
                     _ScrollOffset--;
                 else if (inputKey.Key == ConsoleKey.DownArrow)
                     _ScrollOffset++;
+                else if (inputKey.Key == ConsoleKey.S)
+                {
+                    var term = PromptSearchTerm();
+                    var results = _Conversations
+                        .SelectMany(c => c.GetMessages())
+                        .Where(m => m.Text != null && m.Text.Contains(term))
+                        .ToArray();
+                    var jumpedResult = EnterSearchResultLoop(results);
+                    if (jumpedResult != null)
+                        EnterConversationLoop(jumpedResult.Conversation, jumpedResult.Timestamp);
+                }
                 else
                 {
-                    for (int i = 0; i < _LinkKeys.Length; i++)
+                    for (int i = 0; i < LinkKeys.Length; i++)
                     {
-                        if (_LinkKeys[i] != char.ToUpper(inputKey.KeyChar))
+                        if (LinkKeys[i] != char.ToUpper(inputKey.KeyChar))
                             continue;
                         var conversationIndex = _ScrollOffset + i;
                         if (conversationIndex < _Conversations.Length)
@@ -62,19 +73,21 @@ namespace ig_view
                 Console.WriteLine();
                 var conversation = _Conversations[i + _ScrollOffset];
                 Console.ForegroundColor = ConsoleColor.DarkGray;
-                Console.Write(i < _LinkKeys.Length ? $"[{_LinkKeys[i]}] " : "    ");
+                Console.Write(i < LinkKeys.Length ? $"[{LinkKeys[i]}] " : "    ");
                 Console.ForegroundColor = ConsoleColor.Gray;
                 Console.Write(Formatting.PadBetween(conversation.Name, conversation.Id, consoleCols - 4));
             }
         }
 
-        private void EnterConversationLoop(Conversation conversation)
+        private void EnterConversationLoop(Conversation conversation, DateTime jump = default)
         {
             Console.SetCursorPosition(0, 0);
             Console.BackgroundColor = ConsoleColor.DarkGray;
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write(Formatting.PadWhitespace("Loading conversation...", Console.WindowWidth));
             var view = new ConversationView(conversation);
+            if (jump != default)
+                view.Scroll(jump);
             for (; ;)
             {
                 var mediaLinks = RenderConversationView(view).ToArray();
@@ -85,6 +98,18 @@ namespace ig_view
                     view.Scroll(1);
                 else if (inputKey.Key == ConsoleKey.DownArrow)
                     view.Scroll(-1);
+                else if (inputKey.Key == ConsoleKey.J)
+                    view.Scroll(PromptJumpDate());
+                else if (inputKey.Key == ConsoleKey.S)
+                {
+                    var term = PromptSearchTerm();
+                    var results = view.MessageBuffer
+                        .Where(m => m.Text != null && m.Text.Contains(term))
+                        .ToArray();
+                    var jumpedResult = EnterSearchResultLoop(results);
+                    if (jumpedResult != null)
+                        view.Scroll(jumpedResult.Timestamp);
+                }
             }
         }
 
@@ -97,6 +122,57 @@ namespace ig_view
             Console.WriteLine(Formatting.PadBetween(view.Conversation.Name, "[J] jump [S] search [UP] scroll up [DN] scroll down [ESC] exit", consoleCols));
             Console.WriteLine(Formatting.PadWhitespace($"participants: {string.Join(", ", view.Conversation.Participants)}", consoleCols));
             return view.Present(2);
+        }
+
+        private DateTime PromptJumpDate()
+        {
+            var consoleCols = Console.WindowWidth;
+            Console.SetCursorPosition(0, 0);
+            Console.BackgroundColor = ConsoleColor.Magenta;
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.Write(new string(' ', consoleCols));
+            Console.SetCursorPosition(0, 0);
+            Console.Write("Enter a date and/or time: ");
+            return DateTime.Parse(Console.ReadLine()!);
+        }
+
+        private string PromptSearchTerm()
+        {
+            var consoleCols = Console.WindowWidth;
+            Console.SetCursorPosition(0, 0);
+            Console.BackgroundColor = ConsoleColor.Magenta;
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.Write(new string(' ', consoleCols));
+            Console.SetCursorPosition(0, 0);
+            Console.Write("Enter search term: ");
+            return Console.ReadLine()!;
+        }
+
+        private ChatMessage? EnterSearchResultLoop(ChatMessage[] results)
+        {
+            var view = new SearchResultView(results);
+            for (; ;)
+            {
+                view.Present();
+                var inputKey = Console.ReadKey(true);
+                if (inputKey.Key == ConsoleKey.Escape)
+                    return null;
+                else if (inputKey.Key == ConsoleKey.UpArrow)
+                    view.Scroll(-1);
+                else if (inputKey.Key == ConsoleKey.DownArrow)
+                    view.Scroll(1);
+                else
+                {
+                    for (int i = 0; i < LinkKeys.Length; i++)
+                    {
+                        if (LinkKeys[i] != char.ToUpper(inputKey.KeyChar))
+                            continue;
+                        var resultIndex = view.ScrollOffset + i;
+                        if (resultIndex < results.Length)
+                            return results[resultIndex];
+                    }
+                }
+            }
         }
     }
 }

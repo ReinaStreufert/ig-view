@@ -9,6 +9,7 @@ namespace ig_view
     public class ConversationView
     {
         public Conversation Conversation { get; }
+        public ChatMessage[] MessageBuffer => _MessageArray;
 
         public ConversationView(Conversation conversation)
         {
@@ -65,7 +66,7 @@ namespace ig_view
                                 attachmentsLine.Append(" / ");
                             var index = linkCount++;
                             yield return new MediaLink(index, photo);
-                            attachmentsLine.Append($"Press [{InboxView._LinkKeys[index]}] to view");
+                            attachmentsLine.Append($"Press [{InboxView.LinkKeys[index]}] to view");
                         }
                         Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.Write(Formatting.PadWhitespace(attachmentsLine.ToString(), consoleCols));

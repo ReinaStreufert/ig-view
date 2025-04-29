@@ -23,7 +23,6 @@ namespace ig_view
         }
 
         private string _DirPath;
-        private readonly JsonLoadSettings _JsonSettings = new JsonLoadSettings();
 
         private IEnumerable<string> GetParticipants()
         {
@@ -43,19 +42,21 @@ namespace ig_view
                 .OrderBy(p => int.Parse(p.Item2.Split('_')[1]))
                 .Select(p => JObject.Parse(Formatting.DecipherInstagramness(File.ReadAllText(p.p))))
                 .SelectMany(o => ((JArray)o["messages"]!))
-                .Select(m => new ChatMessage((JObject)m, Id, _DirPath));
+                .Select(m => new ChatMessage(this, (JObject)m, Id, _DirPath));
         }
     }
 
     public class ChatMessage
     {
+        public Conversation Conversation { get; }
         public string SenderName { get; }
         public DateTime Timestamp { get; }
         public string? Text { get; }
         public string[]? Photos { get; }
 
-        public ChatMessage(JObject json, string conversationId, string dirPath)
+        public ChatMessage(Conversation conversation, JObject json, string conversationId, string dirPath)
         {
+            Conversation = conversation;
             SenderName = json["sender_name"]!.ToString();
             Timestamp = DateTime.UnixEpoch.AddMilliseconds((long)json["timestamp_ms"]!);
             var content = json["content"];
