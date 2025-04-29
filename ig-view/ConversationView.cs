@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 
 namespace ig_view
 {
@@ -48,7 +44,7 @@ namespace ig_view
                 }
                 messageLine++;
                 Console.BackgroundColor = ConsoleColor.Black;
-                if (message.Photos != null)
+                if (message.Attachments != null)
                 {
                     if (currentRow + messageLine >= headerRows)
                     {
@@ -56,17 +52,24 @@ namespace ig_view
                             Console.WriteLine();
                         linesWritten = true;
                         var attachmentsLine = new StringBuilder();
-                        attachmentsLine.Append("Photos: ");
+                        attachmentsLine.Append("Attachments: ");
                         var first = true;
-                        foreach (var photo in message.Photos)
+                        foreach (var attachment in message.Attachments)
                         {
                             if (first)
                                 first = false;
                             else
                                 attachmentsLine.Append(" / ");
                             var index = linkCount++;
-                            yield return new MediaLink(index, photo);
-                            attachmentsLine.Append($"Press [{InboxView.LinkKeys[index]}] to view");
+                            yield return new MediaLink(index, attachment);
+                            var verb = attachment.Type switch
+                            {
+                                MessageAttachmentType.Photo => "view",
+                                MessageAttachmentType.Video => "watch",
+                                MessageAttachmentType.Audio => "listen",
+                                _ => throw new NotImplementedException()
+                            }; // grammar is important
+                            attachmentsLine.Append($"Press [{InboxView.LinkKeys[index]}] to {verb}");
                         }
                         Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.Write(Formatting.PadWhitespace(attachmentsLine.ToString(), consoleCols));
@@ -134,7 +137,8 @@ namespace ig_view
                 if (currentLine.Length + word.Length < colCount)
                 {
                     currentLine.Append(word.Replace(Environment.NewLine, null));
-                } else if (word.Length >= colCount)
+                }
+                else if (word.Length >= colCount)
                 {
                     // break between characters for giant contiguous letters
                     int wordPos = 0;
@@ -147,7 +151,8 @@ namespace ig_view
                         currentLine.Clear();
                     }
                     continue;
-                } else
+                }
+                else
                 {
                     // break between words (word-wrap)
                     result.Add(currentLine.ToString());
@@ -167,18 +172,18 @@ namespace ig_view
             return result.ToArray();
         }
 
-        
+
     }
 
     public class MediaLink
     {
         public int Index { get; }
-        public string FilePath { get; }
+        public Attachment Attachment { get; }
 
-        public MediaLink(int index, string filePath)
+        public MediaLink(int index, Attachment attachment)
         {
             Index = index;
-            FilePath = filePath;
+            Attachment = attachment;
         }
     }
 }

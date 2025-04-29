@@ -42,7 +42,7 @@ namespace ig_view
                 .OrderBy(p => int.Parse(p.Item2.Split('_')[1]))
                 .Select(p => JObject.Parse(Formatting.DecipherInstagramness(File.ReadAllText(p.p))))
                 .SelectMany(o => ((JArray)o["messages"]!))
-                .Select(m => new ChatMessage(this, (JObject)m, Id, _DirPath));
+                .Select(m => new ChatMessage(this, (JObject)m, _DirPath));
         }
     }
 
@@ -52,9 +52,9 @@ namespace ig_view
         public string SenderName { get; }
         public DateTime Timestamp { get; }
         public string? Text { get; }
-        public string[]? Photos { get; }
+        public Attachment[]? Attachments { get; }
 
-        public ChatMessage(Conversation conversation, JObject json, string conversationId, string dirPath)
+        public ChatMessage(Conversation conversation, JObject json, string dirPath)
         {
             Conversation = conversation;
             SenderName = json["sender_name"]!.ToString();
@@ -64,20 +64,50 @@ namespace ig_view
                 Text = null;
             else
                 Text = content.Type == JTokenType.String ? content.ToString() : "Not text";
+            var attachments = Enumerable.Empty<Attachment>();
             if (json.ContainsKey("photos"))
             {
                 var photosArr = (JArray)json["photos"]!;
-                Photos = photosArr
-                    .Cast<JObject>()
-                    .Select(o =>
-                    {
-                        var split = o["uri"]!.ToString().Split($"{conversationId}/");
-                        if (split.Length == 1)
-                            return split[0];
-                        return Path.Combine(dirPath, split[1]);
-                    })
-                    .ToArray();
+                attachments = attachments.Concat(ParseAttachments(photosArr, dirPath, MessageAttachmentType.Photo));
             }
+            if (json.ContainsKey("videos"))
+            {
+                var videosArr = (JArray)json["videos"]!;
+                attachments = attachments.Concat(ParseAttachments(videosArr, dirPath, MessageAttachmentType.Video));
+            }
+            if (json.ContainsKey("audio_files"))
+            {
+                var recordingArr = (JArray)json["audio_files"]!;
+                attachments = attachments.Concat(ParseAttachments(recordingArr, dirPath, MessageAttachmentType.Audio));
+            }
+            if (attachments.Any())
+                Attachments = attachments.ToArray();
         }
+
+        private IEnumerable<Attachment> ParseAttachments(JArray attachments, string dirPath, MessageAttachmentType type)
+        {
+            return attachments.Cast<JObject>().Select(o => o["uri"]!.ToString().Split($"{Conversation.Id}/"))
+                .Where(split => split.Length > 2)
+                .Select(split => new Attachment(type, Path.Combine(dirPath, split[1])));
+        }
+    }
+
+    public class Attachment
+    {
+        public MessageAttachmentType Type { get; }
+        public string FilePath { get; }
+
+        public Attachment(MessageAttachmentType type, string filePath)
+        {
+            Type = type;
+            FilePath = filePath;
+        }
+    }
+
+    public enum MessageAttachmentType
+    {
+        Photo,
+        Video,
+        Audio
     }
 }

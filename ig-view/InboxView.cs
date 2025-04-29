@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LibChromeDotNet;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,6 +18,8 @@ namespace ig_view
 
         private Conversation[] _Conversations;
         private int _ScrollOffset;
+        private MediaView? _Media;
+        private object _MediaLock = new object();
 
         public void EnterInboxLoop()
         {
@@ -109,6 +112,18 @@ namespace ig_view
                     var jumpedResult = EnterSearchResultLoop(results);
                     if (jumpedResult != null)
                         view.Scroll(jumpedResult.Timestamp);
+                } else
+                {
+                    for (int i = 0; i < LinkKeys.Length; i++)
+                    {
+                        if (LinkKeys[i] != char.ToUpper(inputKey.KeyChar))
+                            continue;
+                        var mediaLink = mediaLinks
+                            .Where(m => m.Index == i)
+                            .FirstOrDefault();
+                        if (mediaLink != null)
+                            _ = ShowAttachmentMediaAsync(mediaLink.Attachment);
+                    }
                 }
             }
         }
@@ -179,6 +194,33 @@ namespace ig_view
                     }
                 }
             }
+        }
+
+        private async Task ShowAttachmentMediaAsync(Attachment attachment)
+        {
+            bool mediaInit = false;
+            MediaView view;
+            lock (_MediaLock)
+            {
+                if (_Media == null)
+                {
+                    mediaInit = true;
+                    view = new MediaView(attachment, OnMediaClosed);
+                    _Media = view;
+                }
+                else
+                    view = _Media;
+            }
+            if (mediaInit)
+                await _Media.LaunchAsync();
+            else
+                await view.SetAttachmentAsync(attachment);
+        }
+
+        private void OnMediaClosed()
+        {
+            lock (_MediaLock)
+                _Media = null;
         }
     }
 }

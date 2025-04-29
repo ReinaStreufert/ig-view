@@ -12,4 +12,10 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="LibChromeDotNet">
+      <HintPath>..\..\ChromeDotNet\LibChromeDotNet\bin\Debug\net7.0\LibChromeDotNet.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>
