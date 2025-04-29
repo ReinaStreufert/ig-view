@@ -24,7 +24,7 @@ namespace ig_view
             return left + new string(' ', whitespaceCount) + right;
         }
 
-        public static string DecipherInstagramness(string instagramAfflictedText)
+        public static string DecipherInstagramness(string instagramAfflictedJson) // my solution is to re-encode before loading json
         {
             // \uXXXX usually refers to a singular utf-16 character. so an apostrophe would be \u0027
             // in text affected by instagram's apparently poorly written backend, these are utf-8 bytes
@@ -33,12 +33,12 @@ namespace ig_view
             // contiguously.its weird and technically ambiguous to write a utf-8 sequence as multiple seperate escape characters
             var sb = new StringBuilder();
             List<byte> bufferedUtf8Bytes = new List<byte>();
-            for (int i = 0; i < instagramAfflictedText.Length; i++)
+            for (int i = 0; i < instagramAfflictedJson.Length; i++)
             {
-                var c = instagramAfflictedText[i];
-                if ((instagramAfflictedText.Length - i) >= 6 && c == '\\' && instagramAfflictedText[i + 1] == 'u')
+                var c = instagramAfflictedJson[i];
+                if ((instagramAfflictedJson.Length - i) >= 6 && c == '\\' && instagramAfflictedJson[i + 1] == 'u')
                 {
-                    var hexCode = instagramAfflictedText.Substring(i + 2, 4);
+                    var hexCode = instagramAfflictedJson.Substring(i + 2, 4);
                     bufferedUtf8Bytes.Add(Convert.FromHexString(hexCode)[1]);
                     i += 5; // bc the for loop already increments to make this 6. i always fuck that up
                 }
@@ -48,7 +48,8 @@ namespace ig_view
                     {
                         var utf8Bytes = bufferedUtf8Bytes.ToArray();
                         bufferedUtf8Bytes.Clear();
-                        sb.Append(Encoding.UTF8.GetString(utf8Bytes));
+                        var symbol = ReplaceIphoneQuotes(Encoding.UTF8.GetString(utf8Bytes));
+                        sb.Append(string.Concat(symbol.Select(sc => $"\\u{(int)sc:X4}")));
                     }
                     sb.Append(c);
                 }
@@ -59,11 +60,20 @@ namespace ig_view
                 sb.Append(Encoding.UTF8.GetString(utf8Bytes));
             }
             return sb.ToString();
-            // AAAAAAAAAAAAAA
-            // okay so Newtonsoft.Json is trying to be helpful, it notices the \u encoding but it is decoding them as it technically should
-            // with each escape sequence being its own individual utf-16 character. because instagram did it wrong, this is...both wrong,
-            // and stops this method from working because it re-encodes them and yet another layer of garbage.
-            // i need to eat
+            
+        }
+
+        private static string ReplaceIphoneQuotes(string symbol)
+        {
+            // also have to replace tim apples boujie iphone letters
+            return symbol switch
+            {
+                "‘" => "'",
+                "’" => "'",
+                "“" => "\"",
+                "”" => "\"",
+                _ => symbol
+            };
         }
     }
 }

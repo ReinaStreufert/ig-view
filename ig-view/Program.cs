@@ -6,7 +6,7 @@ namespace ig_view
     {
         static void Main(string[] args)
         {
-            var inbox = new Inbox(Path.Combine(Environment.CurrentDirectory, "messages\\inbox"));
+            var inbox = new Inbox("C:\\Users\\Reina\\Desktop\\sss\\messages\\inbox");//new Inbox(Path.Combine(Environment.CurrentDirectory, "messages\\inbox"));
             var inboxView = new InboxView(inbox);
             Console.CursorVisible = false;
             inboxView.EnterInboxLoop();

@@ -23,11 +23,12 @@ namespace ig_view
         }
 
         private string _DirPath;
+        private readonly JsonLoadSettings _JsonSettings = new JsonLoadSettings();
 
         private IEnumerable<string> GetParticipants()
         {
             var firstPagePath = Path.Combine(_DirPath, "message_1.json");
-            var jsonPage = JObject.Parse(File.ReadAllText(firstPagePath));
+            var jsonPage = JObject.Parse(Formatting.DecipherInstagramness(File.ReadAllText(firstPagePath)));
             var participants = (JArray)jsonPage["participants"]!;
             return participants
                 .Cast<JObject>()
@@ -40,7 +41,7 @@ namespace ig_view
                 .Select(p => (p, Path.GetFileNameWithoutExtension(p)))
                 .Where(p => p.Item2.StartsWith("message_"))
                 .OrderBy(p => int.Parse(p.Item2.Split('_')[1]))
-                .Select(p => JObject.Parse(File.ReadAllText(p.p)))
+                .Select(p => JObject.Parse(Formatting.DecipherInstagramness(File.ReadAllText(p.p))))
                 .SelectMany(o => ((JArray)o["messages"]!))
                 .Select(m => new ChatMessage((JObject)m, Id, _DirPath));
         }
@@ -55,13 +56,13 @@ namespace ig_view
 
         public ChatMessage(JObject json, string conversationId, string dirPath)
         {
-            SenderName = Formatting.DecipherInstagramness(json["sender_name"]!.ToString());
+            SenderName = json["sender_name"]!.ToString();
             Timestamp = DateTime.UnixEpoch.AddMilliseconds((long)json["timestamp_ms"]!);
             var content = json["content"];
             if (content == null)
                 Text = null;
             else
-                Text = content.Type == JTokenType.String ? Formatting.DecipherInstagramness(content.ToString()) : "Not text";
+                Text = content.Type == JTokenType.String ? content.ToString() : "Not text";
             if (json.ContainsKey("photos"))
             {
                 var photosArr = (JArray)json["photos"]!;
