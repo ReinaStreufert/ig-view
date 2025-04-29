@@ -128,24 +128,30 @@ namespace ig_view
         {
             var consoleCols = Console.WindowWidth;
             Console.SetCursorPosition(0, 0);
-            Console.BackgroundColor = ConsoleColor.Magenta;
-            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.BackgroundColor = ConsoleColor.Blue;
+            Console.ForegroundColor = ConsoleColor.Black;
             Console.Write(new string(' ', consoleCols));
             Console.SetCursorPosition(0, 0);
+            Console.CursorVisible = true;
             Console.Write("Enter a date and/or time: ");
-            return DateTime.Parse(Console.ReadLine()!);
+            var result = DateTime.Parse(Console.ReadLine()!);
+            Console.CursorVisible = false;
+            return result;
         }
 
         private string PromptSearchTerm()
         {
             var consoleCols = Console.WindowWidth;
             Console.SetCursorPosition(0, 0);
-            Console.BackgroundColor = ConsoleColor.Magenta;
-            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.BackgroundColor = ConsoleColor.Blue;
+            Console.ForegroundColor = ConsoleColor.Black;
             Console.Write(new string(' ', consoleCols));
             Console.SetCursorPosition(0, 0);
             Console.Write("Enter search term: ");
-            return Console.ReadLine()!;
+            Console.CursorVisible = true;
+            var result = Console.ReadLine()!;
+            Console.CursorVisible = false;
+            return result;
         }
 
         private ChatMessage? EnterSearchResultLoop(ChatMessage[] results)

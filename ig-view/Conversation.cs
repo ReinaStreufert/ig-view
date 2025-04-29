@@ -69,7 +69,13 @@ namespace ig_view
                 var photosArr = (JArray)json["photos"]!;
                 Photos = photosArr
                     .Cast<JObject>()
-                    .Select(o => Path.Combine(dirPath, o["uri"]!.ToString().Split($"{conversationId}/")[1]))
+                    .Select(o =>
+                    {
+                        var split = o["uri"]!.ToString().Split($"{conversationId}/");
+                        if (split.Length == 1)
+                            return split[0];
+                        return Path.Combine(dirPath, split[1]);
+                    })
                     .ToArray();
             }
         }
