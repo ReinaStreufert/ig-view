@@ -21,7 +21,7 @@ namespace ig_view
 
         private Attachment _CurrentSrc;
         private string? _LastSourceUrl;
-        private IDOMNode? _Container;
+        private IAppWindow? _Window;
         private Action _ExitCallback;
 
         public async Task SetAttachmentAsync(Attachment src)
@@ -34,15 +34,16 @@ namespace ig_view
         {
             var window = await context.OpenWindowAsync();
             window.ClosedByUser += _ExitCallback;
-            var docBody = await window.GetDocumentBodyAsync();
-            _Container = await docBody.QuerySelectAsync("#content");
+            _Window = window;
             await UpdateContentAsync();
         }
 
         private async Task UpdateContentAsync()
         {
-            if (_Container == null)
+            if (_Window == null)
                 return;
+            var docBody = await _Window.GetDocumentBodyAsync();
+            var container = await docBody.QuerySelectAsync("#content");
             if (_LastSourceUrl != null)
                 Content.RemoveSource(_LastSourceUrl);
             var mediaElementName = _CurrentSrc.Type switch
@@ -52,7 +53,7 @@ namespace ig_view
                 MessageAttachmentType.Audio => "audio",
                 _ => throw new NotImplementedException()
             };
-            var outerHTML = await _Container.GetOuterHTMLAsync();
+            var outerHTML = await container.GetOuterHTMLAsync();
             var containerElementXml = outerHTML.DocumentElement!;
             for (int i = 0; i < containerElementXml.ChildNodes.Count; i++)
                 containerElementXml.RemoveChild(containerElementXml.ChildNodes[i]!);
@@ -67,9 +68,13 @@ namespace ig_view
                 _ => throw new NotImplementedException()
             });
             mediaElementXml.SetAttribute("src", srcPath);
+            if (_CurrentSrc.Type == MessageAttachmentType.Video)
+                mediaElementXml.SetAttribute("class", "video");
+            if (_CurrentSrc.Type == MessageAttachmentType.Audio || _CurrentSrc.Type == MessageAttachmentType.Video)
+                mediaElementXml.SetAttribute("controls", "true");
             containerElementXml.AppendChild(mediaElementXml);
             _LastSourceUrl = srcPath;
-            await _Container.ModifyOuterHTMLAsync(outerHTML);
+            await container.ModifyOuterHTMLAsync(outerHTML);
         }
     }
 }

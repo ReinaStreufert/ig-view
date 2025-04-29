@@ -29,7 +29,7 @@ namespace ig_view
             {
                 var message = _MessageArray[currentMessageIndex];
                 var messageBody = message.Text == null ? null : WrapMessageBody(message.Text, consoleCols);
-                var messageRows = (messageBody?.Length ?? 0) + (message.Photos == null ? 1 : 2);
+                var messageRows = (messageBody?.Length ?? 0) + (message.Attachments == null ? 1 : 2);
                 currentRow -= messageRows;
                 Console.SetCursorPosition(0, Math.Max(currentRow, headerRows));
                 var participantColor = GetParticipantColor(message.SenderName);

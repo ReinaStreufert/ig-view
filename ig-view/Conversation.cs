@@ -87,7 +87,7 @@ namespace ig_view
         private IEnumerable<Attachment> ParseAttachments(JArray attachments, string dirPath, MessageAttachmentType type)
         {
             return attachments.Cast<JObject>().Select(o => o["uri"]!.ToString().Split($"{Conversation.Id}/"))
-                .Where(split => split.Length > 2)
+                .Where(split => split.Length > 1)
                 .Select(split => new Attachment(type, Path.Combine(dirPath, split[1])));
         }
     }

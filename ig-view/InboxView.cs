@@ -122,7 +122,7 @@ namespace ig_view
                             .Where(m => m.Index == i)
                             .FirstOrDefault();
                         if (mediaLink != null)
-                            _ = ShowAttachmentMediaAsync(mediaLink.Attachment);
+                            ShowAttachmentMedia(mediaLink.Attachment);
                     }
                 }
             }
@@ -196,25 +196,22 @@ namespace ig_view
             }
         }
 
-        private async Task ShowAttachmentMediaAsync(Attachment attachment)
+        private void ShowAttachmentMedia(Attachment attachment)
         {
-            bool mediaInit = false;
             MediaView view;
             lock (_MediaLock)
             {
                 if (_Media == null)
                 {
-                    mediaInit = true;
                     view = new MediaView(attachment, OnMediaClosed);
+                    _ = view.LaunchAsync();
                     _Media = view;
+                    return;
                 }
                 else
                     view = _Media;
             }
-            if (mediaInit)
-                await _Media.LaunchAsync();
-            else
-                await view.SetAttachmentAsync(attachment);
+            _ = view.SetAttachmentAsync(attachment);
         }
 
         private void OnMediaClosed()

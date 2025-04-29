@@ -6,7 +6,16 @@
     <RootNamespace>ig_view</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <StartupObject>ig_view.Program</StartupObject>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="mediaViewWeb\index.html" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="mediaViewWeb\*" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
