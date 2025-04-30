@@ -9,7 +9,7 @@ namespace ig_view
 {
     public class InboxView
     {
-        public static readonly string LinkKeys = "0123456789ABCDEFGHIKLMNOPQRTUVWXYZ"; // j and s omitted (jump and search)
+        public static readonly string LinkKeys = "0123456789ABCDEGHIKLMNOPQRTUVWXYZ"; // j, f, and s omitted (jump, find and sanitize)
 
         public InboxView(Inbox inbox)
         {
@@ -33,9 +33,9 @@ namespace ig_view
                     _ScrollOffset--;
                 else if (inputKey.Key == ConsoleKey.DownArrow)
                     _ScrollOffset++;
-                else if (inputKey.Key == ConsoleKey.S)
+                else if (inputKey.Key == ConsoleKey.F)
                 {
-                    var term = PromptSearchTerm();
+                    var term = Prompt("Enter search term: ");
                     var results = _Conversations
                         .SelectMany(c => c.GetMessages())
                         .Where(m => m.Text != null && m.Text.Contains(term))
@@ -69,7 +69,7 @@ namespace ig_view
             Console.BackgroundColor = ConsoleColor.Magenta;
             Console.ForegroundColor = ConsoleColor.Black;
             Console.SetCursorPosition(0, 0);
-            Console.Write(Formatting.PadBetween("IG Inbox", "[S] search all [UP] scroll up [DN] scroll down", consoleCols));
+            Console.Write(Formatting.PadBetween("IG Inbox", "[F] find all [UP] scroll up [DN] scroll down", consoleCols));
             Console.BackgroundColor = ConsoleColor.Black;
             for (int i = 0; i < consoleRows - 1 && _ScrollOffset + i < _Conversations.Length; i++)
             {
@@ -102,17 +102,24 @@ namespace ig_view
                 else if (inputKey.Key == ConsoleKey.DownArrow)
                     view.Scroll(-1);
                 else if (inputKey.Key == ConsoleKey.J)
-                    view.Scroll(PromptJumpDate());
-                else if (inputKey.Key == ConsoleKey.S)
+                    view.Scroll(DateTime.Parse(Prompt("Enter a date and/or time: ")));
+                else if (inputKey.Key == ConsoleKey.F)
                 {
-                    var term = PromptSearchTerm();
+                    var term = Prompt("Enter search term: ");
                     var results = view.MessageBuffer
                         .Where(m => m.Text != null && m.Text.Contains(term))
                         .ToArray();
                     var jumpedResult = EnterSearchResultLoop(results);
                     if (jumpedResult != null)
                         view.Scroll(jumpedResult.Timestamp);
-                } else
+                } else if (inputKey.Key == ConsoleKey.S)
+                {
+                    var guardTerm = Prompt("Enter guard term: ");
+                    var guardDuration = TimeSpan.FromMinutes(int.Parse(Prompt("Enter guard duration (minutes): ")));
+                    var deletedCount = view.MessageBuffer.SanitizeAttachments(guardTerm, guardDuration);
+                    Prompt($"Deleted {deletedCount} matching attachment files...Press enter");
+                }
+                else
                 {
                     for (int i = 0; i < LinkKeys.Length; i++)
                     {
@@ -134,12 +141,12 @@ namespace ig_view
             Console.BackgroundColor = ConsoleColor.White;
             Console.ForegroundColor = ConsoleColor.Black;
             Console.SetCursorPosition(0, 0);
-            Console.WriteLine(Formatting.PadBetween(view.Conversation.Name, "[J] jump [S] search [UP] scroll up [DN] scroll down [ESC] exit", consoleCols));
+            Console.WriteLine(Formatting.PadBetween(view.Conversation.Name, "[J] jump [F] find [S] sanitize [UP] scroll up [DN] scroll down [ESC] exit", consoleCols));
             Console.WriteLine(Formatting.PadWhitespace($"participants: {string.Join(", ", view.Conversation.Participants)}", consoleCols));
             return view.Present(2);
         }
 
-        private DateTime PromptJumpDate()
+        private string Prompt(string msg)
         {
             var consoleCols = Console.WindowWidth;
             Console.SetCursorPosition(0, 0);
@@ -147,22 +154,7 @@ namespace ig_view
             Console.ForegroundColor = ConsoleColor.Black;
             Console.Write(new string(' ', consoleCols));
             Console.SetCursorPosition(0, 0);
-            Console.CursorVisible = true;
-            Console.Write("Enter a date and/or time: ");
-            var result = DateTime.Parse(Console.ReadLine()!);
-            Console.CursorVisible = false;
-            return result;
-        }
-
-        private string PromptSearchTerm()
-        {
-            var consoleCols = Console.WindowWidth;
-            Console.SetCursorPosition(0, 0);
-            Console.BackgroundColor = ConsoleColor.Blue;
-            Console.ForegroundColor = ConsoleColor.Black;
-            Console.Write(new string(' ', consoleCols));
-            Console.SetCursorPosition(0, 0);
-            Console.Write("Enter search term: ");
+            Console.Write(msg);
             Console.CursorVisible = true;
             var result = Console.ReadLine()!;
             Console.CursorVisible = false;
