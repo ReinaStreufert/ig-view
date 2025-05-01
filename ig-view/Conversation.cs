@@ -40,9 +40,9 @@ namespace ig_view
                 .Select(p => (p, Path.GetFileNameWithoutExtension(p)))
                 .Where(p => p.Item2.StartsWith("message_"))
                 .OrderBy(p => int.Parse(p.Item2.Split('_')[1]))
-                .Select(p => JObject.Parse(Formatting.DecipherInstagramness(File.ReadAllText(p.p))))
-                .SelectMany(o => ((JArray)o["messages"]!))
-                .Select(m => new ChatMessage(this, (JObject)m, _DirPath));
+                .Select(p => (p.p, JObject.Parse(Formatting.DecipherInstagramness(File.ReadAllText(p.p)))))
+                .SelectMany(o => ((JArray)o.Item2["messages"]!)
+                .Select(m => new ChatMessage(this, (JObject)m, _DirPath, o.p)));
         }
     }
 
@@ -53,12 +53,14 @@ namespace ig_view
         public DateTime Timestamp { get; }
         public string? Text { get; }
         public Attachment[]? Attachments { get; }
+        public string SourceJsonPath { get; }
 
-        public ChatMessage(Conversation conversation, JObject json, string dirPath)
+        public ChatMessage(Conversation conversation, JObject json, string dirPath, string sourcePath)
         {
             Conversation = conversation;
             SenderName = json["sender_name"]!.ToString();
             Timestamp = DateTime.UnixEpoch.AddMilliseconds((long)json["timestamp_ms"]!);
+            SourceJsonPath = sourcePath;
             var content = json["content"];
             if (content == null)
                 Text = null;

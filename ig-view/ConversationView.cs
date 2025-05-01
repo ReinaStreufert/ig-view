@@ -39,7 +39,7 @@ namespace ig_view
                 {
                     Console.BackgroundColor = participantColor;
                     Console.ForegroundColor = ConsoleColor.Black;
-                    Console.Write(Formatting.PadBetween(message.SenderName, message.Timestamp.ToString(), consoleCols));
+                    Console.Write(Formatting.PadBetween(message.SenderName, $"{message.Timestamp} {message.SourceJsonPath.Split("your_instagram_activity")[1]}", consoleCols));
                     linesWritten = true;
                 }
                 messageLine++;
