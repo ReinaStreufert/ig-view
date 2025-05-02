@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <None Remove="mediaViewWeb\index.html" />
+    <None Remove="mediaViewWeb\Lato-Regular.ttf" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,6 +1,7 @@
 ﻿using LibChromeDotNet;
 using LibChromeDotNet.ChromeInterop;
 using LibChromeDotNet.HTML5;
+using LibChromeDotNet.HTML5.DOM;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -75,6 +76,8 @@ namespace ig_view
             containerElementXml.AppendChild(mediaElementXml);
             _LastSourceUrl = srcPath;
             await container.ModifyOuterHTMLAsync(outerHTML);
+            var bannerText = await docBody.QuerySelectAsync("#bannerText");
+            await bannerText.SetInnerTextAsync(_CurrentSrc.FilePath);
         }
     }
 }
